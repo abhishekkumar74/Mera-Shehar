@@ -1,4 +1,4 @@
-# master.md — "Roz" (working name)
+# master.md — "Mera Shehar"
 
 > Read this file fully before writing any code. Work ONE phase at a time (see section 11). After each phase: stop, summarise what was built, list anything skipped, and wait for approval. Do not add features, screens or packages that are not in this file. If something is unclear, ask instead of guessing.
 
@@ -6,7 +6,7 @@
 
 ## 1. Product in one paragraph
 
-Roz is an Android-first Flutter app for everyday Indian users (18-50, small cities and towns, mid-range phones). The user sets up their **photo and name once**. Every festival (Diwali, Dhanteras, Christmas, New Year, Chhath, Eid, birthdays...) they get beautiful premium cards with **their own photo and name already placed on the card**, and share it in **one tap to WhatsApp Status or groups**. Each shared card carries a small "Roz" watermark, which is the main organic growth loop. Revenue this year: Google AdMob only.
+Mera Shehar is an Android-first Flutter app for everyday Indian users (18-50, small cities and towns, mid-range phones). The user sets up their **photo and name once**. Every festival (Diwali, Dhanteras, Christmas, New Year, Chhath, Eid, birthdays...) they get beautiful premium cards with **their own photo and name already placed on the card**, and share it in **one tap to WhatsApp Status or groups**. Each shared card carries a small "Mera Shehar" watermark, which is the main organic growth loop. Revenue this year: Google AdMob only.
 
 **North-star behaviours:** (1) open app, (2) card already has my photo and name, (3) one tap to WhatsApp. Everything else is secondary.
 
@@ -17,6 +17,8 @@ Mandi/sone-chandi bhav, news, polls/community, chat, jobs, buy-sell, subscriptio
 ---
 
 ## 2. Tech stack (fixed — do not substitute)
+
+**Backend is Firebase only.** No Node/Express server, no Supabase in v1 (not needed: photos stay on device, templates come from Firestore/Remote Config, push is FCM). Repo layout: Flutter app lives in `client/`; paths like `lib/...` in this file mean `client/lib/...`.
 
 | Area | Choice |
 |---|---|
@@ -32,6 +34,7 @@ Mandi/sone-chandi bhav, news, polls/community, chat, jobs, buy-sell, subscriptio
 | Images | `cached_network_image` |
 | Local storage | `shared_preferences` |
 | Install tracking | `play_install_referrer` |
+| Links (policy pages, Play Store) | `url_launcher` |
 
 Rules: no other packages without asking. Fonts are **bundled as assets**, not fetched at runtime. APK/AAB target < 25 MB. Must run smoothly on 3 GB RAM phones. Templates must load from the network but have **3 bundled fallback templates** so the app works offline on first launch.
 
@@ -107,7 +110,7 @@ Behaviour:
 
 ### S2. Home
 Reference: Stitch "Home" screenshot (apply the fixes in section 4.1).
-- App bar (single, only one in the app shell): left = logo mark (36dp, `surface` rounded square, radius 12) + wordmark "Roz" in Playfair 20; right = user avatar 36dp circle with 1.5px white ring (tap opens Profile). There is NO centered "Home" title.
+- App bar (single, only one in the app shell): left = logo mark (36dp, `surface` rounded square, radius 12) + wordmark "Mera Shehar" in Playfair 18 (single line, never wraps); right = user avatar 36dp circle with 1.5px white ring (tap opens Profile). There is NO centered "Home" title.
 - Greeting block below app bar (left aligned, no second avatar): "Namaste" (13, `muted`) above "<first name> ji" in Playfair 22.
 - Hero card (ratio 4:5, radius 24, fill = template background, soft 1px `border` outline). Content of the default Diwali hero: inner hairline frame (1px `goldLine`, 10dp inset, radius 18), three tiny sparkle marks near the top, a gold line-art diya inside a flat glow circle (flat concentric circles, no blur), serif title "Shubh Deepawali" (Playfair 32), subtitle (Plus Jakarta 14, gold, max 2 lines) "Aapko aur aapke parivaar ko dheron shubhkaamnayein", and the user's photo pill (white, radius full, avatar 36 + name 14/500) at the bottom. Illustration and title must be sized/positioned so there is no large empty gap in the middle of the card.
 - The hero card height is capped so the **"Status lagao" button is fully visible without scrolling** on a 360x780 dp screen.
@@ -142,7 +145,7 @@ Shown when the user comes back to the app after sharing.
 - **Never claim the status was posted** (WhatsApp gives no callback). Wording must be "khul gaya / tayyar", not "ho gaya".
 
 ### S6. Profile
-Edit photo, name, shop name. Privacy Policy, Terms, "Dost ko bhejo" (referral share), app version. Nothing else.
+Edit photo, name, shop name. Privacy Policy and Terms (open via `url_launcher`, URLs in one constants file), "Dost ko bhejo" (referral share, added in Phase 4). App version is added in Phase 5. Nothing else.
 
 ### S7. Saved
 Grid of cards the user saved (local list of template IDs + chosen layout). Empty state: "Abhi koi card save nahi kiya" with button "Tyohar dekho".
@@ -158,7 +161,7 @@ Five Stitch screens exist (Onboarding, Home, Tyohar, Editor, Share success). The
 **Mandatory fixes (these override the screenshots):**
 1. One app bar per screen. Stitch shows two stacked headers on Editor and Tyohar and two avatars on Home. Home has exactly one avatar (app bar).
 2. Remove the grey gradient strip under the Home app bar (rendering artifact).
-3. No centered "Home" / "Cards Tyohar" / "Card Customizer" / "Send Gilded Wish" titles in app bars. Only: Home = logo + Roz; Tyohar = "Tyohar"; Editor = template title; Share sheet = no title.
+3. No centered "Home" / "Cards Tyohar" / "Card Customizer" / "Send Gilded Wish" titles in app bars. Only: Home = logo + Mera Shehar; Tyohar = "Tyohar"; Editor = template title; Share sheet = no title.
 4. Remove English filler: "Handcrafted folios", "6 Collections", "Winter solstice", "Season of grace" as UI text. (Eyebrow text like this may exist only inside template artwork if the template data says so.)
 5. UI labels are sentence case. Bottom nav labels: "Home", "Tyohar", "Saved", "Profile" (11dp, not uppercase). Section headers like "Aane wale tyohar" are sentence case, 13dp, `muted`. The uppercase letter-spaced style exists only inside template cards.
 6. Dates are never hardcoded. Stitch's "10 Nov" for Dhanteras is a placeholder. All dates come from `festivalDate` in template data (verify real dates when entering data).
@@ -171,7 +174,7 @@ Five Stitch screens exist (Onboarding, Home, Tyohar, Editor, Share success). The
 
 - A template is rendered by a single `CardRenderer` widget that takes `Template + UserProfile + Layout`. The same widget is used in Home, Tyohar thumbnails, Editor and export. No separate export UI.
 - Export: wrap in `RepaintBoundary`, `toImage(pixelRatio)` to a **1080x1350 PNG (4:5)**, write to cache dir, then share. Export must complete in < 1.5 s on a low-end phone.
-- Watermark: small "Roz" mark bottom-right, 40% opacity, inside the PNG. Always on in v1. Position must not collide with the photo pill in any layout.
+- Watermark: small "Mera Shehar" mark bottom-right, 40% opacity, inside the PNG. Always on in v1. Position must not collide with the photo pill in any layout.
 - Photo layouts (v1): `bottomLeft`, `bottomCenter`, `bottomRight`, `none` (pill with photo + name). Phase 2 adds `cutoutLarge` (background-removed photo placed large on the card, using ML Kit selfie segmentation). Segmentation runs once at onboarding and the result is cached as a transparent PNG.
 - Text on cards supports Hindi + English. Never clip: use auto-fit with a min font size, then wrap.
 
@@ -229,7 +232,7 @@ lib/
 ## 7. Sharing and growth
 
 - **Status button:** export PNG, then open WhatsApp share via intent (`com.whatsapp`, fallback `com.whatsapp.w4b`, fallback system share sheet). Be aware: there is no official API to post straight to Status. The WhatsApp picker shows "My status" at the top; the UX copy should say "Status lagao" and the user taps "My status" there.
-- **Share button:** system share sheet with the PNG and a short caption: "Roz se banaya. Aap bhi banao: <play store link>".
+- **Share button:** system share sheet with the PNG and a short caption: "Mera Shehar se banaya. Aap bhi banao: <play store link>".
 - **Referral:** Play Store link carries `referrer=utm_source%3Dshare%26utm_campaign%3D<userCode>`. On first launch read it via Play Install Referrer and log an `install_referred` analytics event. Do **not** use Firebase Dynamic Links (shut down).
 - "Dost ko bhejo" in Profile shares the app link with the same referrer.
 - Ambassador codes: `utm_campaign=amb_<code>` — just log them, no payout logic in the app.
@@ -248,7 +251,7 @@ lib/
 
 ## 9. Notifications and analytics
 
-- FCM topic `daily`. Ask for notification permission (Android 13+) only after the user's **first successful share**, with the line: "Roz subah card ready milega. Allow karein?"
+- FCM topic `daily`. Ask for notification permission (Android 13+) only after the user's **first successful share**, with the line: "Har subah card ready milega. Allow karein?"
 - Notification copy example: "Aaj ka card ready hai. Status par lagao."
 - Analytics events: `onboarding_done`, `template_view`, `editor_open`, `layout_change`, `share_status_tap`, `share_generic_tap`, `export_done`, `install_referred`, `notif_open`, `ad_impression`. Always log `template_id`.
 - Core metrics to watch: D1/D7 retention, share rate (shares per DAU), template-level share rate.
@@ -282,7 +285,7 @@ Flutter project, folder structure, theme from section 3 (tokens as a single `App
 
 ### Phase 1 — Onboarding and profile
 S1 and S6 (profile edit). Photo pick + crop, local save, "profile exists" gate at launch.
-**Done when:** a new user gets from install to Home in under 30 s, and data survives app restart.
+**Done when:** a new user gets from install to Home in under 30 s, and data survives app restart. Detailed instructions: `docs/prompts/phase-1.md`.
 
 ### Phase 2 — Card engine
 `CardRenderer`, 3 bundled templates (Diwali, Christmas, New Year), layouts, export PNG, WhatsApp intent, system share, S4, S5. Then add ML Kit cut-out layout `cutoutLarge`.
@@ -314,7 +317,7 @@ Animations, skeleton loaders, empty/error states, low-end device test, app size 
 
 ## 13. Open decisions (D4 and D5 before Phase 0, the rest before Phase 2)
 - **D1. Export ratio:** v1 exports 4:5 (1080x1350). WhatsApp Status is 9:16, so the card appears centered with side/top bars. Acceptable for v1; evaluate 9:16 templates in a later phase.
-- **D2. Final app name:** "Roz" is a working name. Check Play Store availability before Phase 5.
-- **D4. applicationId** (e.g. `com.<yourname>.roz`) must be chosen before Phase 0 and can never change after the first Play Store upload.
+- **D2. App name is "Mera Shehar".** Check Play Store availability before Phase 5. Note: the name suggests one city while the product is festival cards for everyone; revisit only if growth data says so.
+- **D4. applicationId** (currently `com.merashehar.app`) must be chosen before Phase 0 and can never change after the first Play Store upload.
 - **D5. Firebase project** is created by the owner (manual) before Phase 0; the agent only wires it in.
 - **D3. First 3 festivals to design in full:** Dhanteras/Diwali, Christmas, New Year (8-10 styles each).
