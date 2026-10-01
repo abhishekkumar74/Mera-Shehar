@@ -1,14 +1,17 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_cropper/image_cropper.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../../../app/constants/app_constants.dart';
+import '../../../core/services/photo_picker_service.dart';
 import '../../../core/strings/app_strings.dart';
 import '../../../core/tokens/app_tokens.dart';
 import '../../../core/widgets/app_top_bar.dart';
 import '../../../core/widgets/primary_button.dart';
-
 import '../data/profile_repository.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -21,10 +24,12 @@ class ProfileScreen extends ConsumerStatefulWidget {
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _shopNameController = TextEditingController();
-  final ImagePicker _picker = ImagePicker();
 
   File? _newPhotoFile;
+  String? _nameError;
+  String? _linkError;
   bool _isSaving = false;
+  bool _savedSuccess = false;
   bool _initialized = false;
 
   @override
@@ -41,45 +46,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     _initialized = true;
   }
 
+  bool _hasChanges(UserProfile profile) {
+    if (_newPhotoFile != null) return true;
+    if (_nameController.text.trim() != profile.name) return true;
+    if (_shopNameController.text.trim() != (profile.shopName ?? '')) return true;
+    return false;
+  }
+
   Future<void> _pickImage(ImageSource source) async {
     Navigator.pop(context);
-    try {
-      final XFile? pickedFile = await _picker.pickImage(
-        source: source,
-        maxWidth: 1200,
-        maxHeight: 1200,
-        imageQuality: 85,
-      );
+    final photoPicker = ref.read(photoPickerServiceProvider);
+    final file = await photoPicker.pickAndCropImage(source: source, context: context);
 
-      if (pickedFile == null) return;
-
-      final CroppedFile? croppedFile = await ImageCropper().cropImage(
-        sourcePath: pickedFile.path,
-        aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
-        uiSettings: [
-          AndroidUiSettings(
-            toolbarTitle: 'Crop Photo',
-            toolbarColor: AppTokens.ink,
-            toolbarWidgetColor: AppTokens.bg,
-            activeControlsWidgetColor: AppTokens.gold,
-            initAspectRatio: CropAspectRatioPreset.square,
-            lockAspectRatio: true,
-          ),
-          IOSUiSettings(
-            title: 'Crop Photo',
-            aspectRatioLockEnabled: true,
-            resetAspectRatioEnabled: false,
-          ),
-        ],
-      );
-
-      if (croppedFile != null) {
-        setState(() {
-          _newPhotoFile = File(croppedFile.path);
-        });
-      }
-    } catch (e) {
-      // Ignore photo pick errors silently
+    if (file != null && mounted) {
+      setState(() {
+        _newPhotoFile = file;
+        _savedSuccess = false;
+      });
     }
   }
 
@@ -125,32 +108,64 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  Future<void> _saveProfile() async {
-    final name = _nameController.text.trim();
-    if (name.isEmpty) return;
+  Future<void> _openUrl(String url) async {
+    try {
+      final uri = Uri.parse(url);
+      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!launched && mounted) {
+        setState(() => _linkError = 'Link nahi khul paaya.');
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _linkError = 'Link nahi khul paaya.');
+      }
+    }
+  }
 
-    setState(() => _isSaving = true);
+  Future<void> _saveProfile() async {
+    final rawName = _nameController.text;
+    final normalizedName = UserProfile.normalizeName(rawName);
+
+    if (!UserProfile.isValidName(normalizedName)) {
+      setState(() => _nameError = AppStrings.onboardingErrName);
+      return;
+    }
+
+    setState(() {
+      _nameError = null;
+      _isSaving = true;
+    });
 
     try {
-      await ref.read(profileProvider.notifier).updateProfile(
-            name: name,
+      await ref.read(profileProvider.notifier).updateProfileDetails(
+            name: normalizedName,
             newPhotoFile: _newPhotoFile,
             shopName: _shopNameController.text,
           );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Profile update ho gayi', style: AppTokens.body14),
-            backgroundColor: AppTokens.ink,
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        setState(() {
+          _newPhotoFile = null;
+          _savedSuccess = true;
+        });
+
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) {
+            setState(() => _savedSuccess = false);
+          }
+        });
       }
     } finally {
       if (mounted) {
         setState(() => _isSaving = false);
       }
+    }
+  }
+
+  Future<void> _resetProfile() async {
+    await ref.read(profileProvider.notifier).clearProfile();
+    if (mounted) {
+      context.go('/onboarding');
     }
   }
 
@@ -170,6 +185,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           }
 
           final existingPhotoPath = profile?.photoPath;
+          final isChanged = profile != null && _hasChanges(profile);
 
           return SingleChildScrollView(
             padding: const EdgeInsets.symmetric(
@@ -179,14 +195,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Avatar Picker
+                // 112dp Avatar Picker
                 GestureDetector(
                   onTap: _showImagePickerSheet,
                   child: Stack(
                     children: [
                       Container(
-                        width: 96,
-                        height: 96,
+                        width: 112,
+                        height: 112,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: AppTokens.surface,
@@ -196,15 +212,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           child: _newPhotoFile != null
                               ? Image.file(
                                   _newPhotoFile!,
-                                  width: 96,
-                                  height: 96,
+                                  width: 112,
+                                  height: 112,
                                   fit: BoxFit.cover,
                                 )
-                              : (existingPhotoPath != null && File(existingPhotoPath).existsSync())
+                              : (existingPhotoPath != null &&
+                                      existingPhotoPath.isNotEmpty &&
+                                      File(existingPhotoPath).existsSync())
                                   ? Image.file(
                                       File(existingPhotoPath),
-                                      width: 96,
-                                      height: 96,
+                                      width: 112,
+                                      height: 112,
                                       fit: BoxFit.cover,
                                     )
                                   : Center(
@@ -218,8 +236,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ),
                       ),
                       Positioned(
-                        bottom: 0,
-                        right: 0,
+                        bottom: 4,
+                        right: 4,
                         child: Container(
                           padding: const EdgeInsets.all(6),
                           decoration: const BoxDecoration(
@@ -261,8 +279,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           counterText: '',
                           hintText: 'Aapka naam',
                         ),
+                        onChanged: (_) => setState(() => _savedSuccess = false),
                       ),
                     ),
+                    if (_nameError != null) ...[
+                      const SizedBox(height: AppTokens.space4),
+                      Text(
+                        _nameError!,
+                        style: AppTokens.small12.copyWith(color: const Color(0xFFB3261E)),
+                      ),
+                    ],
                   ],
                 ),
                 const SizedBox(height: AppTokens.space20),
@@ -272,7 +298,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Dukaan ya vyapaar ka naam (Optional)',
+                      'Dukaan ka naam (optional)',
                       style: AppTokens.small12.copyWith(
                         color: AppTokens.ink,
                         fontWeight: FontWeight.w500,
@@ -290,47 +316,61 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           counterText: '',
                           hintText: 'Ex: Sharma Traders',
                         ),
+                        onChanged: (_) => setState(() => _savedSuccess = false),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: AppTokens.space24),
 
-                // Save Button
-                PrimaryButton(
-                  label: _isSaving ? 'Saving...' : 'Save',
-                  onPressed: _isSaving ? null : _saveProfile,
-                ),
-                const SizedBox(height: AppTokens.space32),
+                // Primary Save Button (Only visible when changes exist or recently saved)
+                if (isChanged || _savedSuccess)
+                  PrimaryButton(
+                    label: _savedSuccess
+                        ? 'Save ho gaya'
+                        : (_isSaving ? 'Saving...' : 'Save karein'),
+                    leadingIcon: _savedSuccess ? Icons.check : null,
+                    onPressed: _isSaving ? null : _saveProfile,
+                  ),
+                const SizedBox(height: AppTokens.space24),
 
                 const Divider(color: AppTokens.border),
-                const SizedBox(height: AppTokens.space16),
+                const SizedBox(height: AppTokens.space8),
 
-                // Secondary Links
-                ListTile(
-                  leading: const Icon(Icons.share_outlined, color: AppTokens.ink),
-                  title: Text(AppStrings.profileShareApp, style: AppTokens.body14Medium),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: AppTokens.hint),
-                  onTap: () {},
-                ),
+                // List Rows for Legal
                 ListTile(
                   leading: const Icon(Icons.privacy_tip_outlined, color: AppTokens.ink),
                   title: Text(AppStrings.profilePrivacy, style: AppTokens.body14Medium),
                   trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: AppTokens.hint),
-                  onTap: () {},
+                  onTap: () => _openUrl(AppConstants.privacyPolicyUrl),
                 ),
                 ListTile(
                   leading: const Icon(Icons.description_outlined, color: AppTokens.ink),
                   title: Text(AppStrings.profileTerms, style: AppTokens.body14Medium),
                   trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: AppTokens.hint),
-                  onTap: () {},
+                  onTap: () => _openUrl(AppConstants.termsConditionsUrl),
                 ),
+                if (_linkError != null) ...[
+                  Padding(
+                    padding: const EdgeInsets.all(AppTokens.space8),
+                    child: Text(
+                      _linkError!,
+                      style: AppTokens.caption11.copyWith(color: const Color(0xFFB3261E)),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: AppTokens.space24),
 
-                Text(
-                  'Mera Shehar v1.0.0',
-                  style: AppTokens.caption11.copyWith(color: AppTokens.hint),
-                ),
+                // Debug Reset Option
+                if (kDebugMode)
+                  TextButton.icon(
+                    onPressed: _resetProfile,
+                    icon: const Icon(Icons.refresh, size: 16, color: Color(0xFFB3261E)),
+                    label: Text(
+                      'Reset profile (Debug only)',
+                      style: AppTokens.small12.copyWith(color: const Color(0xFFB3261E)),
+                    ),
+                  ),
                 const SizedBox(height: AppTokens.space24),
               ],
             ),

@@ -2,10 +2,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-import '../../../app/router/app_router.dart';
+import '../../../app/constants/app_constants.dart';
+import '../../../core/services/analytics_service.dart';
+import '../../../core/services/photo_picker_service.dart';
 import '../../../core/strings/app_strings.dart';
 import '../../../core/tokens/app_tokens.dart';
 import '../../../core/widgets/dashed_circle.dart';
@@ -22,12 +24,18 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final TextEditingController _nameController = TextEditingController();
-  final ImagePicker _picker = ImagePicker();
 
   File? _selectedPhoto;
   String? _nameError;
   String? _photoError;
+  String? _linkError;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkLostData();
+  }
 
   @override
   void dispose() {
@@ -35,46 +43,27 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     super.dispose();
   }
 
+  Future<void> _checkLostData() async {
+    final photoPicker = ref.read(photoPickerServiceProvider);
+    final lostFile = await photoPicker.retrieveLostData();
+    if (lostFile != null && mounted) {
+      setState(() {
+        _selectedPhoto = lostFile;
+        _photoError = null;
+      });
+    }
+  }
+
   Future<void> _pickImage(ImageSource source) async {
     Navigator.pop(context); // Close bottom sheet
-    try {
-      final XFile? pickedFile = await _picker.pickImage(
-        source: source,
-        maxWidth: 1200,
-        maxHeight: 1200,
-        imageQuality: 85,
-      );
+    final photoPicker = ref.read(photoPickerServiceProvider);
+    final file = await photoPicker.pickAndCropImage(source: source, context: context);
 
-      if (pickedFile == null) return;
-
-      final CroppedFile? croppedFile = await ImageCropper().cropImage(
-        sourcePath: pickedFile.path,
-        aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
-        uiSettings: [
-          AndroidUiSettings(
-            toolbarTitle: 'Crop Photo',
-            toolbarColor: AppTokens.ink,
-            toolbarWidgetColor: AppTokens.bg,
-            activeControlsWidgetColor: AppTokens.gold,
-            initAspectRatio: CropAspectRatioPreset.square,
-            lockAspectRatio: true,
-          ),
-          IOSUiSettings(
-            title: 'Crop Photo',
-            aspectRatioLockEnabled: true,
-            resetAspectRatioEnabled: false,
-          ),
-        ],
-      );
-
-      if (croppedFile != null) {
-        setState(() {
-          _selectedPhoto = File(croppedFile.path);
-          _photoError = null;
-        });
-      }
-    } catch (e) {
-      // Ignore photo pick errors silently
+    if (file != null && mounted) {
+      setState(() {
+        _selectedPhoto = file;
+        _photoError = null;
+      });
     }
   }
 
@@ -120,8 +109,23 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
+  Future<void> _openUrl(String url) async {
+    try {
+      final uri = Uri.parse(url);
+      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!launched && mounted) {
+        setState(() => _linkError = 'Link nahi khul paaya.');
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _linkError = 'Link nahi khul paaya.');
+      }
+    }
+  }
+
   Future<void> _submit() async {
-    final name = _nameController.text.trim();
+    final rawName = _nameController.text;
+    final normalizedName = UserProfile.normalizeName(rawName);
     bool hasError = false;
 
     setState(() {
@@ -132,7 +136,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         _photoError = null;
       }
 
-      if (name.isEmpty) {
+      if (!UserProfile.isValidName(normalizedName)) {
         _nameError = AppStrings.onboardingErrName;
         hasError = true;
       } else {
@@ -145,12 +149,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     setState(() => _isLoading = true);
 
     try {
-      await ref.read(profileProvider.notifier).updateProfile(
-            name: name,
-            newPhotoFile: _selectedPhoto,
+      await ref.read(profileProvider.notifier).saveProfile(
+            name: normalizedName,
+            photoFile: _selectedPhoto!,
           );
 
-      await ref.read(hasProfileProvider.notifier).completeOnboarding();
+      await analyticsService.log('onboarding_done');
 
       if (mounted) {
         context.go('/home');
@@ -294,13 +298,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       controller: _nameController,
                       maxLength: 30,
                       textCapitalization: TextCapitalization.words,
+                      textInputAction: TextInputAction.done,
                       style: AppTokens.body14Medium,
                       decoration: const InputDecoration(
                         counterText: '',
                         hintText: 'Ram Sharma',
                       ),
                       onChanged: (val) {
-                        if (_nameError != null && val.trim().isNotEmpty) {
+                        if (_nameError != null && UserProfile.isValidName(val)) {
                           setState(() => _nameError = null);
                         }
                       },
@@ -341,18 +346,49 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               ),
               const SizedBox(height: AppTokens.space32),
 
-              // Legal / Privacy Notices
+              // Legal / Privacy Notices with Tappable Links
               Text(
                 AppStrings.onboardingPrivacyNotice,
                 style: AppTokens.caption11,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: AppTokens.space4),
-              Text(
-                AppStrings.onboardingTermsConsent,
-                style: AppTokens.caption11,
-                textAlign: TextAlign.center,
+
+              Wrap(
+                alignment: WrapAlignment.center,
+                children: [
+                  Text('Aage badhkar aap ', style: AppTokens.caption11),
+                  GestureDetector(
+                    onTap: () => _openUrl(AppConstants.privacyPolicyUrl),
+                    child: Text(
+                      'Privacy Policy',
+                      style: AppTokens.caption11.copyWith(
+                        color: AppTokens.gold,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                  Text(' aur ', style: AppTokens.caption11),
+                  GestureDetector(
+                    onTap: () => _openUrl(AppConstants.termsConditionsUrl),
+                    child: Text(
+                      'Terms',
+                      style: AppTokens.caption11.copyWith(
+                        color: AppTokens.gold,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                  Text(' se sahmat hote hain.', style: AppTokens.caption11),
+                ],
               ),
+              if (_linkError != null) ...[
+                const SizedBox(height: AppTokens.space4),
+                Text(
+                  _linkError!,
+                  style: AppTokens.caption11.copyWith(color: const Color(0xFFB3261E)),
+                ),
+              ],
               const SizedBox(height: AppTokens.space16),
             ],
           ),

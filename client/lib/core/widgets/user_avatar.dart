@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../tokens/app_tokens.dart';
 
-/// UserAvatar: Circular avatar with a 1.5px white outer ring. Shows initial if no photo.
+/// UserAvatar: Circular avatar with a 1.5px white outer ring.
+/// Shows photo if available, fallback to initial letter.
 class UserAvatar extends StatelessWidget {
   final String? photoPath;
   final String? initial;
@@ -18,6 +20,10 @@ class UserAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool hasFile = photoPath != null &&
+        photoPath!.isNotEmpty &&
+        File(photoPath!).existsSync();
+
     final avatarChild = Container(
       width: size,
       height: size,
@@ -27,17 +33,24 @@ class UserAvatar extends StatelessWidget {
         border: Border.all(color: AppTokens.white, width: 1.5),
       ),
       child: ClipOval(
-        child: Center(
-          child: Text(
-            (initial != null && initial!.isNotEmpty)
-                ? initial![0].toUpperCase()
-                : 'M',
-            style: AppTokens.body14Medium.copyWith(
-              color: AppTokens.gold,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
+        child: hasFile
+            ? Image.file(
+                File(photoPath!),
+                width: size,
+                height: size,
+                fit: BoxFit.cover,
+              )
+            : Center(
+                child: Text(
+                  (initial != null && initial!.isNotEmpty)
+                      ? initial![0].toUpperCase()
+                      : 'M',
+                  style: AppTokens.body14Medium.copyWith(
+                    color: AppTokens.gold,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
       ),
     );
 
