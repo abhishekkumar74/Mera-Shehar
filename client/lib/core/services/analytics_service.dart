@@ -27,6 +27,20 @@ class AnalyticsService {
       // Swallows analytics errors safely
     }
   }
+
+  Future<void> logEvent(String name, [Map<String, Object>? params]) => log(name, params);
+
+  Future<void> setUserProperty(String name, String value) async {
+    try {
+      if (_analytics != null) {
+        await _analytics!.setUserProperty(name: name, value: value);
+      } else if (kDebugMode) {
+        print('[AnalyticsService UserProperty] $name: $value');
+      }
+    } catch (e) {
+      // Swallows analytics errors safely
+    }
+  }
 }
 
 final analyticsService = AnalyticsService();

@@ -15,49 +15,55 @@ class AppBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppTokens.bg,
-        border: Border(
-          top: BorderSide(color: AppTokens.border, width: 1.0),
+    return SafeArea(
+      child: Container(
+        margin: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 12.0, top: 4.0),
+        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+        height: 64.0,
+        decoration: BoxDecoration(
+          color: AppTokens.surface,
+          borderRadius: BorderRadius.circular(32.0),
+          border: Border.all(color: AppTokens.border, width: 1.0),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0C000000),
+              blurRadius: 12.0,
+              offset: Offset(0, 4),
+            ),
+          ],
         ),
-      ),
-      child: SafeArea(
-        child: SizedBox(
-          height: 60.0,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _NavItem(
-                label: AppStrings.tabHome,
-                icon: Icons.home_outlined,
-                activeIcon: Icons.home,
-                isActive: currentIndex == 0,
-                onTap: () => onTap(0),
-              ),
-              _NavItem(
-                label: AppStrings.tabTyohar,
-                icon: Icons.auto_awesome_outlined,
-                activeIcon: Icons.auto_awesome,
-                isActive: currentIndex == 1,
-                onTap: () => onTap(1),
-              ),
-              _NavItem(
-                label: AppStrings.tabSaved,
-                icon: Icons.bookmark_border_outlined,
-                activeIcon: Icons.bookmark,
-                isActive: currentIndex == 2,
-                onTap: () => onTap(2),
-              ),
-              _NavItem(
-                label: AppStrings.tabProfile,
-                icon: Icons.person_outline,
-                activeIcon: Icons.person,
-                isActive: currentIndex == 3,
-                onTap: () => onTap(3),
-              ),
-            ],
-          ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _NavItem(
+              label: AppStrings.tabHome,
+              icon: Icons.home_outlined,
+              activeIcon: Icons.home,
+              isActive: currentIndex == 0,
+              onTap: () => onTap(0),
+            ),
+            _NavItem(
+              label: AppStrings.tabTyohar,
+              icon: Icons.auto_awesome_outlined,
+              activeIcon: Icons.auto_awesome,
+              isActive: currentIndex == 1,
+              onTap: () => onTap(1),
+            ),
+            _NavItem(
+              label: AppStrings.tabSaved,
+              icon: Icons.bookmark_border_outlined,
+              activeIcon: Icons.bookmark,
+              isActive: currentIndex == 2,
+              onTap: () => onTap(2),
+            ),
+            _NavItem(
+              label: AppStrings.tabProfile,
+              icon: Icons.person_outline,
+              activeIcon: Icons.person,
+              isActive: currentIndex == 3,
+              onTap: () => onTap(3),
+            ),
+          ],
         ),
       ),
     );
@@ -81,29 +87,39 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isActive ? AppTokens.ink : AppTokens.hint;
+    final color = isActive ? AppTokens.gold : AppTokens.hint;
 
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(24.0),
       splashColor: Colors.transparent,
       highlightColor: Colors.transparent,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            isActive ? activeIcon : icon,
-            size: 22.0,
-            color: color,
-          ),
-          const SizedBox(height: AppTokens.space4),
-          Text(
-            label,
-            style: AppTokens.caption11.copyWith(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 6.0),
+        decoration: BoxDecoration(
+          color: isActive ? AppTokens.gold.withValues(alpha: 0.12) : Colors.transparent,
+          borderRadius: BorderRadius.circular(20.0),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isActive ? activeIcon : icon,
+              size: 22.0,
               color: color,
-              fontWeight: isActive ? FontWeight.w500 : FontWeight.w400,
             ),
-          ),
-        ],
+            const SizedBox(height: AppTokens.space4),
+            Text(
+              label,
+              style: AppTokens.caption11.copyWith(
+                color: isActive ? AppTokens.ink : AppTokens.hint,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

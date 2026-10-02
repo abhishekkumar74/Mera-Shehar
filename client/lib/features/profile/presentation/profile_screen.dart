@@ -4,14 +4,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app/constants/app_constants.dart';
+import '../../../core/services/analytics_service.dart';
+import '../../../core/services/app_links.dart';
+import '../../../core/services/notification_service.dart';
 import '../../../core/services/photo_picker_service.dart';
 import '../../../core/strings/app_strings.dart';
 import '../../../core/tokens/app_tokens.dart';
 import '../../../core/widgets/app_top_bar.dart';
 import '../../../core/widgets/primary_button.dart';
+import '../../notifications/domain/notification_permission_state_machine.dart';
 import '../data/profile_repository.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -334,6 +340,61 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                 const SizedBox(height: AppTokens.space24),
 
+                const Divider(color: AppTokens.border),
+                const SizedBox(height: AppTokens.space8),
+
+                // Notification Reminder Row
+                Consumer(
+                  builder: (context, ref, child) {
+                    final stateMachine = notificationService.stateMachine;
+                    final isGranted = stateMachine.state == NotificationPermState.accepted;
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ListTile(
+                          leading: const Icon(Icons.notifications_active_outlined, color: AppTokens.ink),
+                          title: Text('Roz subah reminder', style: AppTokens.body14Medium),
+                          trailing: Switch(
+                            value: isGranted,
+                            activeThumbColor: AppTokens.gold,
+                            onChanged: (val) async {
+                              final prefs = await SharedPreferences.getInstance();
+                              if (stateMachine.state == NotificationPermState.denied) {
+                                if (!context.mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: const Text('Settings mein notification allow karein'),
+                                    action: SnackBarAction(
+                                      label: 'Settings',
+                                      onPressed: () => _openUrl('app-settings:'),
+                                    ),
+                                  ),
+                                );
+                                return;
+                              }
+                              await notificationService.toggleReminderSwitch(val, prefs);
+                              if (mounted) setState(() {});
+                            },
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+
+                // Invite Friend Row
+                ListTile(
+                  leading: const Icon(Icons.share_outlined, color: AppTokens.ink),
+                  title: Text('Dost ko bhejo', style: AppTokens.body14Medium),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: AppTokens.hint),
+                  onTap: () async {
+                    analyticsService.logEvent('invite_tap');
+                    final inviteUrl = await AppLinks.buildPlayStoreUrl(source: 'invite');
+                    final inviteText = 'Apne naam aur photo ke saath tyohar ke card banao, free: $inviteUrl';
+                    await Share.share(inviteText);
+                  },
+                ),
                 const Divider(color: AppTokens.border),
                 const SizedBox(height: AppTokens.space8),
 

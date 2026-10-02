@@ -1,0 +1,170 @@
+[
+  {
+    "id": "diwali_gold_01",
+    "category": "diwali",
+    "title": "Shubh Deepawali Gold",
+    "festivalDate": "2026-11-08",
+    "isPremium": false,
+    "isActive": true,
+    "sortOrder": 1,
+    "palette": {
+      "bgColor": "#F4E8D8",
+      "pillBg": "#FFFFFF",
+      "pillText": "#2B2623",
+      "accent": "#8A6212",
+      "frameColor": "#C9A04A"
+    },
+    "backgroundAsset": "assets/templates/diwali_gold_01/bg.webp",
+    "showInnerFrame": true,
+    "texts": [
+      {
+        "text": "Shubh Deepawali",
+        "style": "display",
+        "x": 0.5,
+        "y": 0.32,
+        "color": "#8A6212",
+        "fontSize": 32,
+        "maxWidth": 0.85
+      },
+      {
+        "text": "Aapko aur aapke parivaar ko dheron shubhkaamnayein",
+        "style": "body",
+        "x": 0.5,
+        "y": 0.48,
+        "color": "#2B2623",
+        "fontSize": 14,
+        "maxWidth": 0.85
+      }
+    ],
+    "photoLayouts": ["bottomLeft", "bottomCenter", "bottomRight", "none"],
+    "defaultLayout": "bottomLeft"
+  },
+  {
+    "id": "diwali_hindi_01",
+    "category": "diwali",
+    "title": "Shubh Deepawali Hindi",
+    "festivalDate": "2026-11-08",
+    "isPremium": false,
+    "isActive": true,
+    "sortOrder": 2,
+    "palette": {
+      "bgColor": "#F6E9DD",
+      "pillBg": "#FFFFFF",
+      "pillText": "#2B2623",
+      "accent": "#8A6212",
+      "frameColor": "#C9A04A"
+    },
+    "backgroundAsset": "assets/templates/diwali_hindi_01/bg.webp",
+    "showInnerFrame": true,
+    "texts": [
+      {
+        "text": "शुभ दीपावली",
+        "style": "display",
+        "x": 0.5,
+        "y": 0.32,
+        "color": "#8A6212",
+        "fontSize": 34,
+        "maxWidth": 0.85
+      },
+      {
+        "text": "आपको और आपके परिवार को दीपावली की हार्दिक शुभकामनाएं",
+        "style": "body",
+        "x": 0.5,
+        "y": 0.50,
+        "color": "#2B2623",
+        "fontSize": 14,
+        "maxWidth": 0.85
+      }
+    ],
+    "photoLayouts": ["bottomLeft", "bottomCenter", "bottomRight", "none"],
+    "defaultLayout": "bottomCenter"
+  },
+  {
+    "id": "xmas_pine_01",
+    "category": "christmas",
+    "title": "Minimal Pine",
+    "festivalDate": "2026-12-25",
+    "isPremium": false,
+    "isActive": true,
+    "sortOrder": 3,
+    "palette": {
+      "bgColor": "#DFE6D6",
+      "pillBg": "#FFFFFF",
+      "pillText": "#2B2623",
+      "accent": "#2D5A27"
+    },
+    "backgroundAsset": "assets/templates/xmas_pine_01/bg.webp",
+    "showInnerFrame": false,
+    "texts": [
+      {
+        "text": "SEASON OF GRACE",
+        "style": "eyebrow",
+        "x": 0.5,
+        "y": 0.22,
+        "color": "#2D5A27",
+        "fontSize": 11,
+        "maxWidth": 0.85
+      },
+      {
+        "text": "Merry Christmas",
+        "style": "display",
+        "x": 0.5,
+        "y": 0.32,
+        "color": "#2D5A27",
+        "fontSize": 34,
+        "maxWidth": 0.85
+      },
+      {
+        "text": "Peace, warmth & joyful light",
+        "style": "italic",
+        "x": 0.5,
+        "y": 0.50,
+        "color": "#4A6B44",
+        "fontSize": 16,
+        "maxWidth": 0.85
+      }
+    ],
+    "photoLayouts": ["bottomLeft", "bottomCenter", "bottomRight", "none"],
+    "defaultLayout": "bottomLeft"
+  },
+  {
+    "id": "newyear_gold_01",
+    "category": "newyear",
+    "title": "Naya Saal Gold",
+    "festivalDate": "2027-01-01",
+    "isPremium": false,
+    "isActive": true,
+    "sortOrder": 4,
+    "palette": {
+      "bgColor": "#F3ECDD",
+      "pillBg": "#FFFFFF",
+      "pillText": "#2B2623",
+      "accent": "#8A6212",
+      "frameColor": "#C9A04A"
+    },
+    "backgroundAsset": "assets/templates/newyear_gold_01/bg.webp",
+    "showInnerFrame": true,
+    "texts": [
+      {
+        "text": "Naya Saal Mubarak",
+        "style": "display",
+        "x": 0.5,
+        "y": 0.34,
+        "color": "#8A6212",
+        "fontSize": 32,
+        "maxWidth": 0.85
+      },
+      {
+        "text": "Har Din Ek Utsav",
+        "style": "body",
+        "x": 0.5,
+        "y": 0.48,
+        "color": "#2B2623",
+        "fontSize": 14,
+        "maxWidth": 0.85
+      }
+    ],
+    "photoLayouts": ["bottomLeft", "bottomCenter", "bottomRight", "none"],
+    "defaultLayout": "bottomCenter"
+  }
+]

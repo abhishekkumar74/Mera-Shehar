@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app/router/app_router.dart';
 import 'app/theme/app_theme.dart';
+import 'core/services/install_referral_service.dart';
+import 'core/services/notification_service.dart';
 import 'core/strings/app_strings.dart';
 import 'core/tokens/app_tokens.dart';
 import 'features/profile/data/profile_repository.dart';
@@ -31,6 +33,10 @@ void main() async {
 
   final sharedPrefs = await SharedPreferences.getInstance();
   final profileRepository = ProfileRepository(sharedPrefs);
+
+  // Phase 4 Services Init
+  await notificationService.init(sharedPrefs);
+  await InstallReferralService.checkAndProcessReferrer();
 
   runApp(
     ProviderScope(
