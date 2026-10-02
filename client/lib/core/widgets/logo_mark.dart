@@ -13,13 +13,13 @@ class LogoMark extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AppTokens.surface,
-        borderRadius: BorderRadius.circular(size * 0.33),
+        shape: BoxShape.circle,
       ),
       child: Center(
         child: CustomPaint(
-          size: Size(size * 0.6, size * 0.6),
+          size: Size(size * 0.55, size * 0.55),
           painter: _LogoPainter(),
         ),
       ),
@@ -30,47 +30,51 @@ class LogoMark extends StatelessWidget {
 class _LogoPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final goldPaint = Paint()
-      ..color = AppTokens.gold
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5
-      ..strokeCap = StrokeCap.round;
-
-    final fillPaint = Paint()
-      ..color = AppTokens.gold
-      ..style = PaintingStyle.fill;
-
     final width = size.width;
     final height = size.height;
 
-    // Outer Pin shape
+    final pinPaint = Paint()
+      ..color = AppTokens.ink
+      ..style = PaintingStyle.fill;
+
+    final goldPaint = Paint()
+      ..color = AppTokens.gold
+      ..style = PaintingStyle.fill;
+
+    // Pin shape
     final path = Path();
-    path.moveTo(width * 0.5, height * 0.95);
+    path.moveTo(width * 0.5, height);
     path.cubicTo(
-      width * 0.1, height * 0.6,
+      width * 0.1, height * 0.65,
       0, height * 0.45,
-      width * 0.5, height * 0.05,
+      0, height * 0.35,
+    );
+    path.arcToPoint(
+      Offset(width, height * 0.35),
+      radius: Radius.circular(width * 0.5),
+      clockwise: true,
     );
     path.cubicTo(
       width, height * 0.45,
-      width * 0.9, height * 0.6,
-      width * 0.5, height * 0.95,
+      width * 0.9, height * 0.65,
+      width * 0.5, height,
     );
-    canvas.drawPath(path, goldPaint);
+    canvas.drawPath(path, pinPaint);
 
-    // Inner Sunrise semicircle inside pin
-    final center = Offset(width * 0.5, height * 0.45);
-    final radius = width * 0.22;
+    // Inner cutout hole inside pin head
+    final innerCenter = Offset(width * 0.5, height * 0.35);
+    final innerRadius = width * 0.25;
+    final bgPaint = Paint()..color = AppTokens.surface;
+    canvas.drawCircle(innerCenter, innerRadius, bgPaint);
+
+    // Inner golden sunrise inside cutout
     canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
+      Rect.fromCircle(center: Offset(width * 0.5, height * 0.38), radius: innerRadius * 0.8),
       pi,
       pi,
-      false,
+      true,
       goldPaint,
     );
-
-    // Center sun core
-    canvas.drawCircle(center, radius * 0.4, fillPaint);
   }
 
   @override
